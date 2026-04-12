@@ -71,12 +71,58 @@ Based on the real-world data above, generate a complete **Tactical Blueprint** f
 `.trim();
 
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
-    systemInstruction,
-  });
 
-  const result = await model.generateContentStream(userPrompt);
+  // Try models in order; gemini-2.0-flash-lite has the most generous free tier
+  const MODEL_PRIORITY = [
+    "gemini-2.5-flash-lite", // fastest & most generous free tier
+    "gemini-2.5-flash",      // best price-performance
+    "gemini-2.5-pro",        // most capable, as last resort
+  ];
+
+  type StreamResult = Awaited<
+    ReturnType<ReturnType<typeof genAI.getGenerativeModel>["generateContentStream"]>
+  >;
+  let result: StreamResult | null = null;
+  let lastErr: unknown;
+
+  for (const modelName of MODEL_PRIORITY) {
+    const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
+    try {
+      result = await model.generateContentStream(userPrompt);
+      break;
+    } catch (err: unknown) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      // Only fall through to next model on quota/not-found errors
+      if (
+        msg.includes("429") ||
+        msg.includes("404") ||
+        msg.toLowerCase().includes("quota") ||
+        msg.toLowerCase().includes("not found")
+      ) {
+        continue;
+      }
+      // Any other error (auth, bad request, etc.) — fail immediately
+      if (msg.includes("403") || msg.toLowerCase().includes("api key")) {
+        return new Response(
+          "Invalid Google AI API key. Check GOOGLE_AI_API_KEY in .env.local.",
+          { status: 403 }
+        );
+      }
+      return new Response(`Gemini error: ${msg}`, { status: 500 });
+    }
+  }
+
+  if (!result) {
+    const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+    if (msg.includes("429") || msg.toLowerCase().includes("quota")) {
+      return new Response(
+        "Google AI quota exceeded for all available models. Enable billing at aistudio.google.com or wait for your daily quota to reset.",
+        { status: 429 }
+      );
+    }
+    return new Response(`Gemini error: ${msg}`, { status: 500 });
+  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

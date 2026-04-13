@@ -105,7 +105,7 @@ function TacticalReport({
     printWindow.document.write(`
       <html>
         <head>
-          <title>Tactical Blueprint – ${form.opponent || "Match"}</title>
+          <title>Counter-Tactics – ${form.opponent || "Opponent"}</title>
           <style>
             body { font-family: 'Courier New', monospace; padding: 40px; color: #000; }
             pre { white-space: pre-wrap; font-size: 14px; line-height: 1.8; }
@@ -132,7 +132,7 @@ function TacticalReport({
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-neon)]">
-              {isStreaming ? "Generating Report…" : "Tactical Report"}
+              {isStreaming ? "Generating Report…" : "Counter-Tactics Report"}
             </p>
             <p className="text-xs text-[var(--color-text-muted)]">
               vs {form.opponent || "Unknown Opponent"} · {form.formation}
@@ -173,9 +173,9 @@ function TacticalReport({
       {/* Summary badges */}
       <div className="flex flex-wrap gap-2 px-5 pt-4">
         {[
-          { label: "Formation", value: form.formation },
-          { label: "Attack", value: form.offensiveStyle },
-          { label: "Defense", value: form.defensiveStyle },
+          { label: "Opp. Formation", value: form.formation },
+          { label: "Opp. Attack", value: form.offensiveStyle },
+          { label: "Opp. Defense", value: form.defensiveStyle },
         ].map(({ label, value }) => (
           <span
             key={label}
@@ -351,7 +351,7 @@ export default function TacticalAssistant() {
             Assistant
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            AI-powered match preparation &amp; tactical analysis
+            AI-powered counter-tactics &amp; opponent breakdown
           </p>
         </div>
       </div>
@@ -362,7 +362,7 @@ export default function TacticalAssistant() {
         <div className="mb-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--color-panel-border)]" />
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-            Match Configuration
+            Opponent Configuration
           </span>
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--color-panel-border)]" />
         </div>
@@ -384,34 +384,34 @@ export default function TacticalAssistant() {
             />
           </div>
 
-          {/* Formation */}
+          {/* Opponent Formation */}
           <SelectField
-            label="Formation"
+            label="Opponent Formation"
             icon={<Radar size={12} />}
             value={form.formation}
             onChange={setField("formation")}
             options={FORMATIONS}
-            placeholder="Select formation"
+            placeholder="Select opponent formation"
           />
 
-          {/* Offensive Style */}
+          {/* Opponent Offensive Style */}
           <SelectField
-            label="Offensive Style"
+            label="Opponent Offensive Style"
             icon={<Swords size={12} />}
             value={form.offensiveStyle}
             onChange={setField("offensiveStyle")}
             options={OFFENSIVE_STYLES}
-            placeholder="Select offensive style"
+            placeholder="Select opponent offensive style"
           />
 
-          {/* Defensive Style */}
+          {/* Opponent Defensive Style */}
           <SelectField
-            label="Defensive Style"
+            label="Opponent Defensive Style"
             icon={<ShieldCheck size={12} />}
             value={form.defensiveStyle}
             onChange={setField("defensiveStyle")}
             options={DEFENSIVE_STYLES}
-            placeholder="Select defensive style"
+            placeholder="Select opponent defensive style"
           />
 
           {/* Error message */}
@@ -441,7 +441,7 @@ export default function TacticalAssistant() {
             ) : (
               <span className="flex items-center justify-center gap-2">
                 <Radar size={16} />
-                Generate Tactical Blueprint
+                Generate Counter-Tactics
               </span>
             )}
             {!isGenerating && (
@@ -463,10 +463,10 @@ export default function TacticalAssistant() {
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                Scanning Live Intelligence…
+                Scanning Counter-Tactical Intelligence…
               </p>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Searching real-world data on {form.opponent}
+                Analysing {form.opponent}&apos;s {form.formation} setup
               </p>
             </div>
             <div className="w-full overflow-hidden rounded-full bg-[var(--color-navy-mid)] h-1">

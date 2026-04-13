@@ -83,6 +83,8 @@ function SelectField({
   );
 }
 
+type ActiveLanguage = "en" | "he" | "fr";
+
 function TacticalReport({
   form,
   content,
@@ -94,8 +96,9 @@ function TacticalReport({
 }) {
   const [copied, setCopied] = useState(false);
   const [hebrewContent, setHebrewContent] = useState("");
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [showHebrew, setShowHebrew] = useState(false);
+  const [frenchContent, setFrenchContent] = useState("");
+  const [isTranslating, setIsTranslating] = useState<ActiveLanguage | null>(null);
+  const [activeLanguage, setActiveLanguage] = useState<ActiveLanguage>("en");
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -103,17 +106,22 @@ function TacticalReport({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleTranslate = async () => {
-    if (hebrewContent) {
-      setShowHebrew((prev) => !prev);
+  const handleTranslate = async (lang: "he" | "fr") => {
+    if (activeLanguage === lang) {
+      setActiveLanguage("en");
       return;
     }
-    setIsTranslating(true);
+    const cached = lang === "he" ? hebrewContent : frenchContent;
+    if (cached) {
+      setActiveLanguage(lang);
+      return;
+    }
+    setIsTranslating(lang);
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ report: content }),
+        body: JSON.stringify({ report: content, language: lang }),
       });
       if (!res.ok) {
         const text = await res.text();
@@ -129,15 +137,16 @@ function TacticalReport({
         if (done) break;
         accumulated += decoder.decode(value, { stream: true });
         if (firstChunk) {
-          setShowHebrew(true);
+          setActiveLanguage(lang);
           firstChunk = false;
         }
-        setHebrewContent(accumulated);
+        if (lang === "he") setHebrewContent(accumulated);
+        else setFrenchContent(accumulated);
       }
     } catch {
       // silently fail; user can retry
     } finally {
-      setIsTranslating(false);
+      setIsTranslating(null);
     }
   };
 
@@ -208,18 +217,19 @@ function TacticalReport({
                 </>
               )}
             </button>
+            {/* Hebrew translation button */}
             <button
-              onClick={handleTranslate}
-              disabled={isTranslating}
-              title={showHebrew ? "Show English report" : "Translate to Hebrew"}
+              onClick={() => handleTranslate("he")}
+              disabled={isTranslating !== null}
+              title={activeLanguage === "he" ? "Show English report" : "Translate to Hebrew"}
               className="flex items-center gap-1.5 rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-all duration-200 hover:border-[var(--color-neon)] hover:text-[var(--color-neon)] hover:shadow-[0_0_8px_var(--color-neon-glow)] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
-              {isTranslating ? (
+              {isTranslating === "he" ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
                   מתרגם…
                 </>
-              ) : showHebrew ? (
+              ) : activeLanguage === "he" ? (
                 <>
                   <Languages size={12} />
                   English
@@ -228,6 +238,30 @@ function TacticalReport({
                 <>
                   <Languages size={12} />
                   עברית
+                </>
+              )}
+            </button>
+            {/* French translation button */}
+            <button
+              onClick={() => handleTranslate("fr")}
+              disabled={isTranslating !== null}
+              title={activeLanguage === "fr" ? "Show English report" : "Traduire en Français"}
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-all duration-200 hover:border-[var(--color-neon)] hover:text-[var(--color-neon)] hover:shadow-[0_0_8px_var(--color-neon-glow)] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isTranslating === "fr" ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  Traduction…
+                </>
+              ) : activeLanguage === "fr" ? (
+                <>
+                  <Languages size={12} />
+                  English
+                </>
+              ) : (
+                <>
+                  <Languages size={12} />
+                  Français
                 </>
               )}
             </button>
@@ -256,8 +290,9 @@ function TacticalReport({
 
       {/* Markdown report body */}
       <div className="p-5">
-        <div className={`rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] p-4${showHebrew ? " direction-rtl" : ""}`}
-          dir={showHebrew ? "rtl" : "ltr"}
+        <div
+          className={`rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] p-4${activeLanguage === "he" ? " direction-rtl" : ""}`}
+          dir={activeLanguage === "he" ? "rtl" : "ltr"}
         >
           <div className="prose-tactical text-sm leading-relaxed text-[var(--color-text-primary)]">
             <ReactMarkdown
@@ -311,17 +346,23 @@ function TacticalReport({
                 ),
               }}
             >
-              {showHebrew ? hebrewContent : content}
+              {activeLanguage === "he"
+              ? hebrewContent
+              : activeLanguage === "fr"
+              ? frenchContent
+              : content}
             </ReactMarkdown>
-            {(isStreaming || (isTranslating && showHebrew)) && (
+            {(isStreaming || (isTranslating !== null && activeLanguage !== "en")) && (
               <span className="inline-block w-2 h-4 bg-[var(--color-neon)] animate-pulse ml-0.5 align-middle" />
             )}
           </div>
         </div>
 
-        <p className="text-[10px] text-[var(--color-text-muted)] text-right mt-3">
-          {showHebrew
+        <p className="text-[10px] text-[var(--color-text-muted)] mt-3" style={{ textAlign: activeLanguage === "he" ? "right" : "left" }}>
+          {activeLanguage === "he"
             ? "תורגם על ידי Football Tactical Assistant · מופעל על ידי Gemini"
+            : activeLanguage === "fr"
+            ? <>Traduit par Football Tactical Assistant · Propulsé par Gemini &amp; Tavily · {new Date().toLocaleDateString("fr-FR")}</>
             : <>Generated by Football Tactical Assistant · Powered by Gemini &amp; Tavily · {new Date().toLocaleDateString()}</>}
         </p>
       </div>

@@ -1,26 +1,26 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-type SupportedLanguage = "he" | "fr";
+type SupportedLanguage = "en" | "fr";
 
 const LANGUAGE_CONFIG: Record<
   SupportedLanguage,
   { systemInstruction: string; userPrompt: (report: string) => string }
 > = {
-  he: {
-    systemInstruction: `You are a professional football analyst and Hebrew language expert specialising in Israeli football terminology. Your task is to translate tactical football reports from English into fluent, professional Hebrew. Use authentic Israeli football (כדורגל) terminology as used by coaches, analysts, and commentators in Israel. Preserve all markdown formatting (headings, bullet points, bold text) exactly as in the source. Translate all section headings and content — do not leave any English text untranslated. The result should read as if it was originally written in Hebrew by a professional football analyst.`,
+  en: {
+    systemInstruction: `You are a professional football analyst and English language expert. Your task is to translate tactical football reports from Hebrew into fluent, professional English. Use authentic football terminology as used by coaches and analysts in England and Europe. Preserve all markdown formatting (headings, bullet points, bold text) exactly as in the source. Translate all section headings and content — do not leave any Hebrew text untranslated. The result should read as if it was originally written in English by a professional football analyst.`,
     userPrompt: (report) =>
-      `Translate the following tactical football report into professional Hebrew. Maintain the exact same markdown structure (##, ###, **, -, etc.). Use authentic Israeli football terminology throughout.\n\n${report}`,
+      `Translate the following tactical football report from Hebrew into professional English. Maintain the exact same markdown structure (##, ###, **, -, etc.). Use authentic football terminology throughout.\n\n${report}`,
   },
   fr: {
-    systemInstruction: `You are a professional football analyst and French language expert specialising in French football (football association) terminology. Your task is to translate tactical football reports from English into fluent, professional French. Use authentic French football terminology as used by coaches, analysts, and commentators in France. Apply the following precise term mappings: "Counter-attack" → "Contre-attaque", "High Line" → "Bloc haut", "Low Block" → "Bloc bas", "Wing-backs" → "Pistons", "High Press" → "Pressing haut", "Possession" → "Jeu de possession", "Long ball" → "Jeu long", "Man-marking" → "Marquage individuel", "Zonal" → "Marquage de zone", "Formation" → "Dispositif tactique", "Pressing" → "Pressing", "Offside trap" → "Piège du hors-jeu", "Striker" → "Avant-centre", "Winger" → "Ailier", "Midfielder" → "Milieu de terrain", "Sweeper" → "Libéro", "Playmaker" → "Meneur de jeu", "False nine" → "Faux numéro 9". Preserve all markdown formatting (headings, bullet points, bold text) exactly as in the source. Translate all section headings and content — do not leave any English text untranslated. The result should read as if it was originally written in French by a professional football analyst.`,
+    systemInstruction: `You are a professional football analyst and French language expert specialising in French football (football association) terminology. Your task is to translate tactical football reports from Hebrew into fluent, professional French. Use authentic French football terminology as used by coaches, analysts, and commentators in France. Apply the following precise term mappings: "Counter-attack" → "Contre-attaque", "High Line" → "Bloc haut", "Low Block" → "Bloc bas", "Wing-backs" → "Pistons", "High Press" → "Pressing haut", "Possession" → "Jeu de possession", "Long ball" → "Jeu long", "Man-marking" → "Marquage individuel", "Zonal" → "Marquage de zone", "Formation" → "Dispositif tactique", "Pressing" → "Pressing", "Offside trap" → "Piège du hors-jeu", "Striker" → "Avant-centre", "Winger" → "Ailier", "Midfielder" → "Milieu de terrain", "Sweeper" → "Libéro", "Playmaker" → "Meneur de jeu", "False nine" → "Faux numéro 9". Preserve all markdown formatting (headings, bullet points, bold text) exactly as in the source. Translate all section headings and content — do not leave any Hebrew text untranslated. The result should read as if it was originally written in French by a professional football analyst.`,
     userPrompt: (report) =>
-      `Translate the following tactical football report into professional French. Maintain the exact same markdown structure (##, ###, **, -, etc.). Use authentic French football terminology throughout. Key term mappings to apply: Counter-attack → Contre-attaque, High Line → Bloc haut, Wing-backs → Pistons, High Press → Pressing haut, Low Block → Bloc bas.\n\n${report}`,
+      `Translate the following tactical football report from Hebrew into professional French. Maintain the exact same markdown structure (##, ###, **, -, etc.). Use authentic French football terminology throughout. Key term mappings to apply: Counter-attack → Contre-attaque, High Line → Bloc haut, Wing-backs → Pistons, High Press → Pressing haut, Low Block → Bloc bas.\n\n${report}`,
   },
 };
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { report, language = "he" } = body as {
+  const { report, language = "en" } = body as {
     report: string;
     language?: SupportedLanguage;
   };

@@ -18,24 +18,48 @@ import {
 } from "lucide-react";
 
 type FormState = {
-  opponent: string;
-  formation: string;
-  offensiveStyle: string;
-  defensiveStyle: string;
+  opponentDefensiveFormation: string;
+  opponentOffensiveFormation: string;
+  defensiveApproach: string;
+  offensiveApproach: string;
 };
 
-const FORMATIONS = ["4-3-3", "4-4-2", "3-5-2", "5-4-1", "4-2-3-1"];
-const OFFENSIVE_STYLES = [
+const DEFENSIVE_FORMATIONS = [
+  "5-4-1",
+  "4-4-2",
+  "4-5-1",
+  "4-1-4-1",
+  "3-5-2",
+  "5-3-2",
+  "4-2-3-1",
+];
+
+const OFFENSIVE_FORMATIONS = [
+  "3-2-5",
+  "4-3-3",
+  "4-2-4",
+  "2-3-5",
+  "3-4-3",
+  "4-4-2",
+  "4-2-3-1",
+];
+
+const DEFENSIVE_APPROACHES = [
+  "High Press",
+  "Low Block",
+  "Mid Block",
+  "Man-marking",
+  "Zonal Defense",
+  "Gegenpressing",
+];
+
+const OFFENSIVE_APPROACHES = [
   "Counter-attack",
   "Possession",
-  "Long ball",
-  "High Press",
-];
-const DEFENSIVE_STYLES = [
-  "Low Block",
-  "High Line",
-  "Man-marking",
-  "Zonal",
+  "Direct Play",
+  "Wing Play",
+  "Tiki-Taka",
+  "Route One",
 ];
 
 function SelectField({
@@ -83,7 +107,7 @@ function SelectField({
   );
 }
 
-type ActiveLanguage = "en" | "he" | "fr";
+type ActiveLanguage = "he" | "en" | "fr";
 
 function TacticalReport({
   form,
@@ -95,10 +119,10 @@ function TacticalReport({
   isStreaming: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const [hebrewContent, setHebrewContent] = useState("");
+  const [englishContent, setEnglishContent] = useState("");
   const [frenchContent, setFrenchContent] = useState("");
   const [isTranslating, setIsTranslating] = useState<ActiveLanguage | null>(null);
-  const [activeLanguage, setActiveLanguage] = useState<ActiveLanguage>("en");
+  const [activeLanguage, setActiveLanguage] = useState<ActiveLanguage>("he");
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -106,12 +130,12 @@ function TacticalReport({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleTranslate = async (lang: "he" | "fr") => {
+  const handleTranslate = async (lang: "en" | "fr") => {
     if (activeLanguage === lang) {
-      setActiveLanguage("en");
+      setActiveLanguage("he");
       return;
     }
-    const cached = lang === "he" ? hebrewContent : frenchContent;
+    const cached = lang === "en" ? englishContent : frenchContent;
     if (cached) {
       setActiveLanguage(lang);
       return;
@@ -140,7 +164,7 @@ function TacticalReport({
           setActiveLanguage(lang);
           firstChunk = false;
         }
-        if (lang === "he") setHebrewContent(accumulated);
+        if (lang === "en") setEnglishContent(accumulated);
         else setFrenchContent(accumulated);
       }
     } catch {
@@ -156,7 +180,7 @@ function TacticalReport({
     printWindow.document.write(`
       <html>
         <head>
-          <title>Counter-Tactics – ${form.opponent || "Opponent"}</title>
+          <title>Counter-Tactics – ${form.opponentDefensiveFormation} / ${form.opponentOffensiveFormation}</title>
           <style>
             body { font-family: 'Courier New', monospace; padding: 40px; color: #000; }
             pre { white-space: pre-wrap; font-size: 14px; line-height: 1.8; }
@@ -186,7 +210,7 @@ function TacticalReport({
               {isStreaming ? "Generating Report…" : "Counter-Tactics Report"}
             </p>
             <p className="text-xs text-[var(--color-text-muted)]">
-              vs {form.opponent || "Unknown Opponent"} · {form.formation}
+              {form.opponentDefensiveFormation} def · {form.opponentOffensiveFormation} off · {form.defensiveApproach} / {form.offensiveApproach}
             </p>
           </div>
         </div>
@@ -217,27 +241,27 @@ function TacticalReport({
                 </>
               )}
             </button>
-            {/* Hebrew translation button */}
+            {/* English translation button */}
             <button
-              onClick={() => handleTranslate("he")}
+              onClick={() => handleTranslate("en")}
               disabled={isTranslating !== null}
-              title={activeLanguage === "he" ? "Show English report" : "Translate to Hebrew"}
+              title={activeLanguage === "en" ? "Show Hebrew report" : "Translate to English"}
               className="flex items-center gap-1.5 rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-all duration-200 hover:border-[var(--color-neon)] hover:text-[var(--color-neon)] hover:shadow-[0_0_8px_var(--color-neon-glow)] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
-              {isTranslating === "he" ? (
+              {isTranslating === "en" ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  מתרגם…
+                  Translating…
                 </>
-              ) : activeLanguage === "he" ? (
+              ) : activeLanguage === "en" ? (
                 <>
                   <Languages size={12} />
-                  English
+                  עברית
                 </>
               ) : (
                 <>
                   <Languages size={12} />
-                  עברית
+                  English
                 </>
               )}
             </button>
@@ -245,7 +269,7 @@ function TacticalReport({
             <button
               onClick={() => handleTranslate("fr")}
               disabled={isTranslating !== null}
-              title={activeLanguage === "fr" ? "Show English report" : "Traduire en Français"}
+              title={activeLanguage === "fr" ? "Show Hebrew report" : "Traduire en Français"}
               className="flex items-center gap-1.5 rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-all duration-200 hover:border-[var(--color-neon)] hover:text-[var(--color-neon)] hover:shadow-[0_0_8px_var(--color-neon-glow)] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {isTranslating === "fr" ? (
@@ -256,7 +280,7 @@ function TacticalReport({
               ) : activeLanguage === "fr" ? (
                 <>
                   <Languages size={12} />
-                  English
+                  עברית
                 </>
               ) : (
                 <>
@@ -272,9 +296,10 @@ function TacticalReport({
       {/* Summary badges */}
       <div className="flex flex-wrap gap-2 px-5 pt-4">
         {[
-          { label: "Opp. Formation", value: form.formation },
-          { label: "Opp. Attack", value: form.offensiveStyle },
-          { label: "Opp. Defense", value: form.defensiveStyle },
+          { label: "Def. Formation", value: form.opponentDefensiveFormation },
+          { label: "Off. Formation", value: form.opponentOffensiveFormation },
+          { label: "Def. Approach", value: form.defensiveApproach },
+          { label: "Off. Approach", value: form.offensiveApproach },
         ].map(({ label, value }) => (
           <span
             key={label}
@@ -291,8 +316,8 @@ function TacticalReport({
       {/* Markdown report body */}
       <div className="p-5">
         <div
-          className={`rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] p-4${activeLanguage === "he" ? " direction-rtl" : ""}`}
-          dir={activeLanguage === "he" ? "rtl" : "ltr"}
+          className="rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-navy-deep)] p-4"
+          dir={activeLanguage === "en" || activeLanguage === "fr" ? "ltr" : "rtl"}
         >
           <div className="prose-tactical text-sm leading-relaxed text-[var(--color-text-primary)]">
             <ReactMarkdown
@@ -346,24 +371,24 @@ function TacticalReport({
                 ),
               }}
             >
-              {activeLanguage === "he"
-              ? hebrewContent
+              {activeLanguage === "en"
+              ? englishContent
               : activeLanguage === "fr"
               ? frenchContent
               : content}
             </ReactMarkdown>
-            {(isStreaming || (isTranslating !== null && activeLanguage !== "en")) && (
+            {(isStreaming || (isTranslating !== null && activeLanguage !== "he")) && (
               <span className="inline-block w-2 h-4 bg-[var(--color-neon)] animate-pulse ml-0.5 align-middle" />
             )}
           </div>
         </div>
 
-        <p className="text-[10px] text-[var(--color-text-muted)] mt-3" style={{ textAlign: activeLanguage === "he" ? "right" : "left" }}>
-          {activeLanguage === "he"
-            ? "תורגם על ידי Football Tactical Assistant · מופעל על ידי Gemini"
+        <p className="text-[10px] text-[var(--color-text-muted)] mt-3" style={{ textAlign: activeLanguage === "en" || activeLanguage === "fr" ? "left" : "right" }}>
+          {activeLanguage === "en"
+            ? <>Translated by Football Tactical Assistant · Powered by Gemini &amp; Tavily · {new Date().toLocaleDateString()}</>
             : activeLanguage === "fr"
             ? <>Traduit par Football Tactical Assistant · Propulsé par Gemini &amp; Tavily · {new Date().toLocaleDateString("fr-FR")}</>
-            : <>Generated by Football Tactical Assistant · Powered by Gemini &amp; Tavily · {new Date().toLocaleDateString()}</>}
+            : <>נוצר על ידי Football Tactical Assistant · מופעל על ידי Gemini &amp; Tavily · {new Date().toLocaleDateString("he-IL")}</>}
         </p>
       </div>
     </div>
@@ -372,10 +397,10 @@ function TacticalReport({
 
 export default function TacticalAssistant() {
   const [form, setForm] = useState<FormState>({
-    opponent: "",
-    formation: "",
-    offensiveStyle: "",
-    defensiveStyle: "",
+    opponentDefensiveFormation: "",
+    opponentOffensiveFormation: "",
+    defensiveApproach: "",
+    offensiveApproach: "",
   });
   const [status, setStatus] = useState<"idle" | "scanning" | "streaming" | "done">("idle");
   const [reportContent, setReportContent] = useState("");
@@ -429,10 +454,10 @@ export default function TacticalAssistant() {
   };
 
   const isFormValid =
-    form.opponent.trim() &&
-    form.formation &&
-    form.offensiveStyle &&
-    form.defensiveStyle;
+    form.opponentDefensiveFormation &&
+    form.opponentOffensiveFormation &&
+    form.defensiveApproach &&
+    form.offensiveApproach;
 
   const isGenerating = status === "scanning" || status === "streaming";
 
@@ -477,50 +502,44 @@ export default function TacticalAssistant() {
         </div>
 
         <div className="space-y-5">
-          {/* Opponent Name */}
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-secondary)]">
-              <Users size={12} />
-              Opponent Name
-            </label>
-            <input
-              type="text"
-              value={form.opponent}
-              onChange={(e) => setField("opponent")(e.target.value)}
-              placeholder="e.g. Manchester City"
-              disabled={isGenerating}
-              className="w-full rounded-lg border border-[var(--color-panel-border)] bg-[var(--color-pitch-black)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none transition-all duration-200 focus:border-[var(--color-neon)] focus:shadow-[0_0_0_3px_var(--color-neon-glow)] disabled:opacity-50"
-            />
-          </div>
-
-          {/* Opponent Formation */}
+          {/* Opponent Defensive Formation */}
           <SelectField
-            label="Opponent Formation"
-            icon={<Radar size={12} />}
-            value={form.formation}
-            onChange={setField("formation")}
-            options={FORMATIONS}
-            placeholder="Select opponent formation"
-          />
-
-          {/* Opponent Offensive Style */}
-          <SelectField
-            label="Opponent Offensive Style"
-            icon={<Swords size={12} />}
-            value={form.offensiveStyle}
-            onChange={setField("offensiveStyle")}
-            options={OFFENSIVE_STYLES}
-            placeholder="Select opponent offensive style"
-          />
-
-          {/* Opponent Defensive Style */}
-          <SelectField
-            label="Opponent Defensive Style"
+            label="Opponent Defensive Formation"
             icon={<ShieldCheck size={12} />}
-            value={form.defensiveStyle}
-            onChange={setField("defensiveStyle")}
-            options={DEFENSIVE_STYLES}
-            placeholder="Select opponent defensive style"
+            value={form.opponentDefensiveFormation}
+            onChange={setField("opponentDefensiveFormation")}
+            options={DEFENSIVE_FORMATIONS}
+            placeholder="e.g. 5-4-1, 4-4-2"
+          />
+
+          {/* Opponent Offensive Formation */}
+          <SelectField
+            label="Opponent Offensive Formation"
+            icon={<Swords size={12} />}
+            value={form.opponentOffensiveFormation}
+            onChange={setField("opponentOffensiveFormation")}
+            options={OFFENSIVE_FORMATIONS}
+            placeholder="e.g. 3-2-5, 4-3-3"
+          />
+
+          {/* Defensive Approach */}
+          <SelectField
+            label="Defensive Approach"
+            icon={<Radar size={12} />}
+            value={form.defensiveApproach}
+            onChange={setField("defensiveApproach")}
+            options={DEFENSIVE_APPROACHES}
+            placeholder="e.g. High Press, Low Block"
+          />
+
+          {/* Offensive Approach */}
+          <SelectField
+            label="Offensive Approach"
+            icon={<Users size={12} />}
+            value={form.offensiveApproach}
+            onChange={setField("offensiveApproach")}
+            options={OFFENSIVE_APPROACHES}
+            placeholder="e.g. Counter-attack, Possession"
           />
 
           {/* Error message */}
@@ -575,7 +594,7 @@ export default function TacticalAssistant() {
                 Scanning Counter-Tactical Intelligence…
               </p>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Analysing {form.opponent}&apos;s {form.formation} setup
+                Analysing {form.opponentDefensiveFormation} / {form.opponentOffensiveFormation} · {form.defensiveApproach} / {form.offensiveApproach}
               </p>
             </div>
             <div className="w-full overflow-hidden rounded-full bg-[var(--color-navy-mid)] h-1">

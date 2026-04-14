@@ -2,22 +2,52 @@ import { tavily } from "@tavily/core";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(request: Request) {
-  const { opponent, formation, offensiveStyle, defensiveStyle } =
-    await request.json();
+  const {
+    opponentDefensiveFormation,
+    opponentOffensiveFormation,
+    defensiveApproach,
+    offensiveApproach,
+  } = await request.json() as {
+    opponentDefensiveFormation: string;
+    opponentOffensiveFormation: string;
+    defensiveApproach: string;
+    offensiveApproach: string;
+  };
 
-  if (!opponent || !formation || !offensiveStyle || !defensiveStyle) {
+  if (
+    !opponentDefensiveFormation ||
+    !opponentOffensiveFormation ||
+    !defensiveApproach ||
+    !offensiveApproach
+  ) {
     return new Response("Missing required fields", { status: 400 });
   }
 
   const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY! });
 
-  const [tacticalSearch, injurySearch] = await Promise.all([
-    tavilyClient.search(
-      `How to beat a ${formation} with ${offensiveStyle} and ${defensiveStyle} football tactics`,
-      { maxResults: 5, searchDepth: "advanced" }
-    ),
-    tavilyClient.search(`${opponent} recent injuries and lineup 2026`, {
+  const tacticalQuery = [
+    `football tactical analysis`,
+    `defensive formation ${opponentDefensiveFormation}`,
+    `offensive formation ${opponentOffensiveFormation}`,
+    `${defensiveApproach} defensive approach`,
+    `${offensiveApproach} offensive style`,
+    `strengths weaknesses how to beat counter tactics`,
+  ].join(" ");
+
+  const historicalQuery = [
+    `football teams historical examples`,
+    `${offensiveApproach} attack ${defensiveApproach} defense`,
+    `${opponentOffensiveFormation} formation past games analysis real teams`,
+  ].join(" ");
+
+  const [tacticalSearch, historicalSearch] = await Promise.all([
+    tavilyClient.search(tacticalQuery, {
       maxResults: 5,
+      searchDepth: "advanced",
+    }),
+    tavilyClient.search(historicalQuery, {
+      maxResults: 5,
+      searchDepth: "advanced",
     }),
   ]);
 
@@ -29,44 +59,49 @@ export async function POST(request: Request) {
       .join("\n\n");
 
   const searchContext = `
-## Real-World Tactical Intelligence (from live web search)
+## מודיעין טקטי בזמן אמת (מחיפוש רשת חי)
 
-### Counter-Tactical Research – vs ${formation} (${offensiveStyle} / ${defensiveStyle})
+### ניתוח טקטי – ${opponentDefensiveFormation} הגנה / ${opponentOffensiveFormation} התקפה · ${defensiveApproach} / ${offensiveApproach}
 ${formatResults(tacticalSearch.results)}
 
-### ${opponent} – Injuries & Lineup News
-${formatResults(injurySearch.results)}
+### דוגמאות היסטוריות – קבוצות ומשחקים דומים
+${formatResults(historicalSearch.results)}
 `.trim();
 
-  const systemInstruction = `You are a Tactical Counter-Specialist — an elite football analyst whose sole mission is to break down an opponent's system and expose its weaknesses. You dissect formations, styles, and tendencies with surgical precision to help coaches devise the optimal plan to dismantle a specific opponent configuration.
+  const systemInstruction = `אתה מנתח טקטי עילית בכדורגל — מומחה לפיצוח מערכות יריב וחשיפת נקודות תורפה. תפקידך לנתח את ההגדרה הטקטית של היריב ולהציג תכנית נגד מפורטת לאנשי המקצוע.
 
-You will be given:
-1. The opponent's formation, offensive style, and defensive style.
-2. Real-time data retrieved from the web about the opponent's tactics, current form, injuries, and lineup.
+תקבל:
+1. ניסוח ההגנה וההתקפה של היריב, גישת ההגנה וסגנון ההתקפה שלו.
+2. נתונים בזמן אמת מהרשת על הטקטיקה, היסטוריה, חוזקות וחולשות של מערכת זו.
 
-Your task is to recommend the best formation and tactical instructions to exploit the opponent's specific setup. Every recommendation must be grounded in the opponent's known configuration and the live data provided. Do not produce generic advice — your counter-plan must directly address the weaknesses of their exact shape and style. Structure your report with clear markdown headings, bullet points, and concise analysis sections.`;
+כללים מחייבים:
+- השתמש אך ורק בהקשר שסופק מחיפוש הרשת כבסיס לניתוח. אסור לייצר ניתוח גנרי.
+- כתוב את כל התשובה בעברית בלבד.
+- השתמש בטרמינולוגיה מקצועית של כדורגל.
+- בנה את הדוח בדיוק ב-3 חלקים עם כותרות בעברית כפי שמפורט בהנחיות המשתמש.`;
 
   const userPrompt = `
-## Opponent Configuration
-- **Opponent:** ${opponent}
-- **Formation:** ${formation}
-- **Offensive Style:** ${offensiveStyle}
-- **Defensive Style:** ${defensiveStyle}
+## הגדרה טקטית של היריב
+- **ניסוח הגנתי:** ${opponentDefensiveFormation}
+- **ניסוח התקפי:** ${opponentOffensiveFormation}
+- **גישה הגנתית:** ${defensiveApproach}
+- **גישה התקפית:** ${offensiveApproach}
 
 ${searchContext}
 
 ---
 
-Based on the opponent configuration and real-world data above, generate a complete **Counter-Tactics for ${opponent}** report. The report must include:
+על בסיס ההגדרה הטקטית והנתונים מחיפוש הרשת לעיל, כתוב דוח טקטי מקצועי מלא בעברית.
+הדוח חייב להיות מחולק בדיוק ל-3 חלקים בלבד עם הכותרות הבאות:
 
-1. **Opponent System Breakdown** – Analyse ${opponent}'s ${formation} shape, their ${offensiveStyle} attack, and ${defensiveStyle} defensive approach. Identify the structural and stylistic weaknesses in this exact configuration.
-2. **Recommended Counter-Formation** – Suggest the optimal formation to use against this setup and explain why it specifically exploits their shape.
-3. **Attacking Plan – How to Break Them Down** – Specific methods to exploit the gaps created by their ${formation} and ${defensiveStyle} block. Reference their known weak areas and how to overload or stretch them.
-4. **Defensive Plan – How to Nullify Their Threat** – How to shut down their ${offensiveStyle} attack and exploit the spaces they leave when pressing or building up.
-5. **Injury & Lineup Impact** – How their current absentees or rotation changes weaken their setup further and what that means for our approach.
-6. **Key Matchup Battles** – Two or three individual battles on the pitch that are critical to winning this tactical duel.
-7. **Set-Piece Angles** – One attacking and one defensive set-piece focus based on vulnerabilities in their shape.
-8. **Manager's Pre-Match Message** – A short, punchy rallying call for the squad (3-4 sentences).
+## סקירה טקטית
+(נתח את שילוב הניסוחים ${opponentDefensiveFormation} הגנה ו-${opponentOffensiveFormation} התקפה יחד עם גישת ${defensiveApproach} ו-${offensiveApproach}. זהה את החוזקות, החולשות, ונקודות התורפה המבניות של מערכת זו בדיוק. השתמש בנתונים מהחיפוש כבסיס לניתוך.)
+
+## איך מנצחים את זה
+(המלצות מעשיות וספציפיות כיצד לנגד ולנצח את ההגדרה הזו: ניסוח נגד מומלץ, תכנית התקפית לפיצוח ה-${defensiveApproach}, תכנית הגנתית לבלימת ה-${offensiveApproach}, ומפתחות קרב קריטיים במגרש.)
+
+## דוגמאות מהעבר
+(דוגמאות היסטוריות אמיתיות של קבוצות ומשחקים שהשתמשו בהגדרה דומה — מה עבד, מה לא עבד, ולקחים מעשיים. השתמש בנתונים מחיפוש הרשת.)
 `.trim();
 
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
